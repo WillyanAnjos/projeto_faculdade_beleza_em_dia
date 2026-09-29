@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Beleza em Dia - protótipo web responsivo para gestão de agendamentos de uma profissional de maquiagem." />
+  <title>Beleza em Dia</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar" aria-label="Cabeçalho do aplicativo">
+      <button class="brand-button" id="brandButton" type="button" aria-label="Ir para o painel inicial">
+        <span class="brand-mark" aria-hidden="true">♡</span>
+        <span class="brand-text">Beleza em Dia</span>
+      </button>
+
+      <div class="topbar-actions">
+        <div class="user-chip" aria-label="Usuária autenticada">
+          <span class="user-avatar" aria-hidden="true">A</span>
+          <span>Administradora</span>
+        </div>
+        <button class="logout-button" id="logoutButton" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main id="mainContent" tabindex="-1">
+      <!-- TELA 1: DASHBOARD -->
+      <section class="screen is-active" id="screen-dashboard" data-screen="dashboard" aria-labelledby="dashboardTitle">
+        <div class="hero-card">
+          <p class="eyebrow">Painel</p>
+          <h1 id="dashboardTitle">Organize sua rotina de beleza.</h1>
+          <p>Agendamentos, clientes e pagamentos em um só lugar.</p>
+
+          <button class="primary-button hero-action" id="newAppointmentButton" type="button">
+            <span class="button-icon" aria-hidden="true">＋</span>
+            <span>Novo agendamento</span>
+            <span class="button-arrow" aria-hidden="true">›</span>
+          </button>
+        </div>
+
+        <nav class="shortcut-grid" aria-label="Atalhos principais">
+          <button class="shortcut-card" type="button" data-shortcut="agenda">
+            <span class="shortcut-icon" aria-hidden="true">▣</span>
+            <span class="shortcut-label">Agenda</span>
+            <span class="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="shortcut-card" type="button" data-shortcut="clientes">
+            <span class="shortcut-icon" aria-hidden="true">♙</span>
+            <span class="shortcut-label">Clientes</span>
+            <span class="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="shortcut-card" type="button" data-shortcut="servicos">
+            <span class="shortcut-icon" aria-hidden="true">✦</span>
+            <span class="shortcut-label">Serviços</span>
+            <span class="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="shortcut-card" type="button" data-shortcut="pagamentos">
+            <span class="shortcut-icon" aria-hidden="true">▰</span>
+            <span class="shortcut-label">Pagamentos</span>
+            <span class="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+        </nav>
+
+        <section class="content-card appointments-card" aria-labelledby="nextAppointmentsTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Hoje</p>
+              <h2 id="nextAppointmentsTitle">Próximos atendimentos</h2>
+            </div>
+            <button class="text-button" id="viewAgendaButton" type="button">Ver agenda completa <span aria-hidden="true">›</span></button>
+          </div>
+
+          <div class="appointment-list" id="appointmentList" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <!-- TELA 2: NOVO AGENDAMENTO -->
+      <section class="screen" id="screen-form" data-screen="form" aria-labelledby="formTitle" hidden>
+        <div class="screen-header">
+          <button class="icon-button" id="backFromFormButton" type="button" aria-label="Voltar para o painel">←</button>
+          <div>
+            <p class="eyebrow">Agenda</p>
+            <h1 id="formTitle">Novo agendamento</h1>
+            <p class="screen-subtitle">Preencha os dados abaixo para reservar um horário.</p>
+          </div>
+        </div>
+
+        <form class="content-card booking-form" id="bookingForm" novalidate>
+          <div class="form-group">
+            <div class="label-row">
+              <label for="clientSelect">Cliente <span aria-hidden="true">*</span></label>
+              <button class="text-button" id="newClientButton" type="button">＋ Novo cliente</button>
+            </div>
+            <select id="clientSelect" name="client" required aria-describedby="clientError">
+              <option value="">Selecione uma cliente</option>
+              <option value="Ana Souza">Ana Souza</option>
+              <option value="Mariana Costa">Mariana Costa</option>
+              <option value="Carla Lima">Carla Lima</option>
+            </select>
+            <p class="field-error" id="clientError" aria-live="polite"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="serviceSelect">Serviço <span aria-hidden="true">*</span></label>
+            <select id="serviceSelect" name="service" required aria-describedby="serviceError">
+              <option value="">Selecione um serviço</option>
+              <option value="Maquiagem Social" data-price="120" data-duration="60">Maquiagem Social · R$ 120,00 · 1h</option>
+              <option value="Maquiagem para Evento" data-price="150" data-duration="90">Maquiagem para Evento · R$ 150,00 · 1h30</option>
+              <option value="Maquiagem para Formatura" data-price="180" data-duration="90">Maquiagem para Formatura · R$ 180,00 · 1h30</option>
+            </select>
+            <p class="field-error" id="serviceError" aria-live="polite"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="dateInput">Data <span aria-hidden="true">*</span></label>
+            <input id="dateInput" name="date" type="date" required aria-describedby="dateError" />
+            <p class="field-error" id="dateError" aria-live="polite"></p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startTimeInput">Horário inicial <span aria-hidden="true">*</span></label>
+              <input id="startTimeInput" name="startTime" type="time" required aria-describedby="startTimeError" />
+              <p class="field-error" id="startTimeError" aria-live="polite"></p>
+            </div>
+            <div class="form-group">
+              <label for="endTimeInput">Horário final <span aria-hidden="true">*</span></label>
+              <input id="endTimeInput" name="endTime" type="time" required aria-describedby="endTimeError" />
+              <p class="field-error" id="endTimeError" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div class="price-box" aria-live="polite">
+            <span>Valor do serviço</span>
+            <strong id="servicePrice">R$ 0,00</strong>
+          </div>
+
+          <div class="form-group">
+            <label for="notesInput">Observações <span class="optional-label">Opcional</span></label>
+            <textarea id="notesInput" name="notes" rows="4" maxlength="250" placeholder="Ex.: evento às 18h"></textarea>
+            <div class="helper-row">
+              <span>Evite inserir dados pessoais desnecessários.</span>
+              <span id="notesCounter">0/250</span>
+            </div>
+          </div>
+
+          <div class="info-banner" role="note">
+            <span class="info-icon" aria-hidden="true">ⓘ</span>
+            <span>O sistema verificará se já existe outro atendimento nesse horário antes de salvar.</span>
+          </div>
+
+          <div class="form-actions">
+            <button class="secondary-button" id="cancelBookingButton" type="button">Cancelar</button>
+            <button class="primary-button" type="submit">
+              <span aria-hidden="true">✓</span>
+              <span>Salvar agendamento</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- TELA 3: RESULTADO -->
+      <section class="screen" id="screen-result" data-screen="result" aria-labelledby="resultTitle" hidden>
+        <div class="result-hero" id="resultHero">
+          <div class="result-icon" id="resultIcon" aria-hidden="true">✓</div>
+          <div>
+            <p class="eyebrow" id="resultEyebrow">Resultado</p>
+            <h1 id="resultTitle">Agendamento realizado</h1>
+            <p id="resultSubtitle">Tudo certo. O horário foi reservado na agenda.</p>
+          </div>
+        </div>
+
+        <div class="alert-banner success" id="resultAlert" role="status" aria-live="polite">
+          <span class="alert-symbol" id="resultAlertSymbol" aria-hidden="true">✓</span>
+          <div>
+            <strong id="resultAlertTitle">Agendamento realizado com sucesso</strong>
+            <p id="resultAlertText">O atendimento foi salvo e já aparece na agenda.</p>
+          </div>
+        </div>
+
+        <section class="content-card result-card" aria-labelledby="summaryTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Resumo</p>
+              <h2 id="summaryTitle">Detalhes do atendimento</h2>
+            </div>
+            <span class="status-badge confirmed" id="appointmentStatusBadge">✓ Confirmado</span>
+          </div>
+
+          <dl class="summary-list">
+            <div><dt>Cliente</dt><dd id="summaryClient">—</dd></div>
+            <div><dt>Serviço</dt><dd id="summaryService">—</dd></div>
+            <div><dt>Data</dt><dd id="summaryDate">—</dd></div>
+            <div><dt>Horário</dt><dd id="summaryTime">—</dd></div>
+            <div><dt>Valor</dt><dd id="summaryPrice">—</dd></div>
+            <div><dt>Observações</dt><dd id="summaryNotes">Sem observações.</dd></div>
+          </dl>
+
+          <div class="status-grid">
+            <div class="status-card pending">
+              <span class="status-icon" aria-hidden="true">$</span>
+              <div>
+                <span class="status-label">Pagamento</span>
+                <strong id="paymentStatusText">Pendente</strong>
+              </div>
+            </div>
+            <div class="status-card confirmed">
+              <span class="status-icon" aria-hidden="true">✓</span>
+              <div>
+                <span class="status-label">Agendamento</span>
+                <strong id="bookingStatusText">Confirmado</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button class="primary-button" id="registerPaymentButton" type="button">▰ Registrar pagamento</button>
+            <button class="secondary-button" id="backToAgendaButton" type="button">← Voltar para a agenda</button>
+            <button class="secondary-button is-hidden" id="fixTimeButton" type="button">← Corrigir horário</button>
+          </div>
+        </section>
+
+        <section class="content-card day-agenda-card" id="dayAgendaCard" aria-labelledby="dayAgendaTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Agenda</p>
+              <h2 id="dayAgendaTitle">Agendamentos do dia</h2>
+            </div>
+            <button class="text-button" id="resultViewAgendaButton" type="button">Ver agenda completa <span aria-hidden="true">›</span></button>
+          </div>
+          <div class="appointment-list" id="resultAppointmentList"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="Navegação principal">
+      <button class="bottom-nav-item is-active" type="button" data-nav="dashboard">
+        <span aria-hidden="true">⌂</span>
+        <span>Início</span>
+      </button>
+      <button class="bottom-nav-item" type="button" data-nav="agenda">
+        <span aria-hidden="true">▣</span>
+        <span>Agenda</span>
+      </button>
+      <button class="bottom-nav-item" type="button" data-nav="clientes">
+        <span aria-hidden="true">♙</span>
+        <span>Clientes</span>
+      </button>
+      <button class="bottom-nav-item" type="button" data-nav="mais">
+        <span aria-hidden="true">⋯</span>
+        <span>Mais</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <dialog class="modal" id="clientDialog" aria-labelledby="clientDialogTitle">
+    <form method="dialog" id="clientForm" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Clientes</p>
+          <h2 id="clientDialogTitle">Nova cliente</h2>
+        </div>
+        <button class="icon-button" value="cancel" aria-label="Fechar cadastro de cliente">×</button>
+      </div>
+
+      <div class="form-group">
+        <label for="newClientName">Nome <span aria-hidden="true">*</span></label>
+        <input id="newClientName" type="text" maxlength="80" autocomplete="off" required />
+      </div>
+      <div class="form-group">
+        <label for="newClientPhone">Telefone <span aria-hidden="true">*</span></label>
+        <input id="newClientPhone" type="tel" maxlength="20" placeholder="(00) 00000-0000" autocomplete="off" required />
+      </div>
+
+      <div class="form-actions">
+        <button class="secondary-button" value="cancel">Cancelar</button>
+        <button class="primary-button" id="saveClientButton" value="default">Salvar cliente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
