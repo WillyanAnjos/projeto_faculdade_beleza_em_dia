@@ -1,6 +1,6 @@
 # Beleza em Dia
 
-Protótipo web responsivo do MVP de gestão para uma profissional de maquiagem.
+Protótipo web responsivo do MVP para organizar atendimentos, clientes e pagamentos de uma profissional de maquiagem.
 
 ## Fluxo principal
 
