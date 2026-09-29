@@ -1,0 +1,9 @@
+{
+  "name": "beleza-em-dia",
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test app-core.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-include=app-core.js app-core.test.js"
+  }
+}

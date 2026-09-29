@@ -1,46 +1,50 @@
-# Beleza em Dia
+# Beleza em Dia — MVP
 
-Protótipo web responsivo do MVP de gestão para uma profissional de maquiagem.
+Aplicação web estática em HTML, CSS e JavaScript para gestão simplificada de uma profissional de maquiagem.
 
-## Fluxo principal
-
-1. Painel inicial
-2. Novo agendamento
-3. Resultado de sucesso ou conflito de horário
-
-## Tecnologias
-
-- HTML5
-- CSS3
-- JavaScript puro
+## Fluxos implementados
+- Painel com indicadores e próximos atendimentos
+- Agenda com filtro por data e status
+- Cadastro e busca de clientes
+- Cadastro e listagem de serviços
+- Novo agendamento
+- Validação de conflito de horários
+- Tela de resultado do agendamento
+- Registro de pagamento
+- Painel de pagamentos
+- Persistência local com localStorage
+- Acessibilidade: alto contraste, tamanho de fonte, foco visível e redução de animações
+- Layout responsivo para celular e desktop
+- Testes automatizados das regras centrais
 
 ## Como executar
+Como o projeto usa módulos ES, abra por um servidor HTTP simples.
 
-Você pode abrir `index.html` diretamente no navegador.
-
-Para testar com um servidor local:
-
+### Python
 ```bash
 python3 -m http.server 8080
 ```
 
-Depois acesse `http://localhost:8080`.
+Depois abra:
+```text
+http://localhost:8080
+```
 
-## Recursos implementados
+### Node
+Se tiver um servidor estático:
+```bash
+npx serve .
+```
 
-- Layout mobile-first e responsivo
-- Dashboard com próximos atendimentos
-- Formulário de novo agendamento
-- Validação de campos obrigatórios
-- Cálculo automático do horário final conforme o serviço
-- Detecção de conflito de horário
-- Resultado com mensagem de sucesso ou erro
-- Registro demonstrativo de pagamento
-- Cadastro rápido demonstrativo de cliente
-- Estados informados por texto + símbolo + cor
-- Áreas de toque adequadas e foco visível
-- Sem dependências externas
+## Testes
+```bash
+npm test
+```
+
+Cobertura:
+```bash
+npm run coverage
+```
 
 ## Observação
-
-Este projeto é um protótipo front-end. Os dados ficam apenas em memória durante a execução e não substituem a implementação posterior em Java/Spring Boot + PostgreSQL definida na arquitetura acadêmica do MVP.
+Esta versão usa `localStorage` para persistência. O backend Java/Spring Boot/PostgreSQL continua como evolução futura prevista na arquitetura acadêmica.
