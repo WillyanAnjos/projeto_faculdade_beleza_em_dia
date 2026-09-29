@@ -1,476 +1,52 @@
-(() => {
-  const screens = {
-    dashboard: document.querySelector('#screen-dashboard'),
-    form: document.querySelector('#screen-form'),
-    result: document.querySelector('#screen-result'),
-  };
-
-  const state = {
-    currentScreen: 'dashboard',
-    appointments: [
-      {
-        id: 1,
-        client: 'Mariana Costa',
-        service: 'Maquiagem Social',
-        date: todayIso(),
-        startTime: '09:00',
-        endTime: '10:00',
-        price: 120,
-        notes: '',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-      },
-      {
-        id: 2,
-        client: 'Carla Lima',
-        service: 'Maquiagem para Evento',
-        date: todayIso(),
-        startTime: '14:30',
-        endTime: '16:00',
-        price: 150,
-        notes: '',
-        status: 'confirmed',
-        paymentStatus: 'pending',
-      },
-      {
-        id: 3,
-        client: 'Juliana Mendes',
-        service: 'Maquiagem para Formatura',
-        date: todayIso(),
-        startTime: '17:00',
-        endTime: '18:30',
-        price: 180,
-        notes: '',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-      },
-      {
-        id: 4,
-        client: 'Mariana Costa',
-        service: 'Maquiagem Social',
-        date: '2026-10-15',
-        startTime: '09:00',
-        endTime: '10:00',
-        price: 120,
-        notes: '',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-      },
-    ],
-    lastResult: null,
-  };
-
-  const bookingForm = document.querySelector('#bookingForm');
-  const clientSelect = document.querySelector('#clientSelect');
-  const serviceSelect = document.querySelector('#serviceSelect');
-  const dateInput = document.querySelector('#dateInput');
-  const startTimeInput = document.querySelector('#startTimeInput');
-  const endTimeInput = document.querySelector('#endTimeInput');
-  const notesInput = document.querySelector('#notesInput');
-  const servicePrice = document.querySelector('#servicePrice');
-  const notesCounter = document.querySelector('#notesCounter');
-  const toast = document.querySelector('#toast');
-  const clientDialog = document.querySelector('#clientDialog');
-  const newClientName = document.querySelector('#newClientName');
-  const newClientPhone = document.querySelector('#newClientPhone');
-
-  const resultHero = document.querySelector('#resultHero');
-  const resultIcon = document.querySelector('#resultIcon');
-  const resultTitle = document.querySelector('#resultTitle');
-  const resultSubtitle = document.querySelector('#resultSubtitle');
-  const resultAlert = document.querySelector('#resultAlert');
-  const resultAlertSymbol = document.querySelector('#resultAlertSymbol');
-  const resultAlertTitle = document.querySelector('#resultAlertTitle');
-  const resultAlertText = document.querySelector('#resultAlertText');
-  const appointmentStatusBadge = document.querySelector('#appointmentStatusBadge');
-  const registerPaymentButton = document.querySelector('#registerPaymentButton');
-  const backToAgendaButton = document.querySelector('#backToAgendaButton');
-  const fixTimeButton = document.querySelector('#fixTimeButton');
-  const dayAgendaCard = document.querySelector('#dayAgendaCard');
-
-  hydrateDefaults();
-  bindEvents();
-  renderAppointments();
-
-  function bindEvents() {
-    document.querySelector('#brandButton').addEventListener('click', () => showScreen('dashboard'));
-    document.querySelector('#newAppointmentButton').addEventListener('click', () => showScreen('form'));
-    document.querySelector('#backFromFormButton').addEventListener('click', () => showScreen('dashboard'));
-    document.querySelector('#cancelBookingButton').addEventListener('click', () => showScreen('dashboard'));
-    document.querySelector('#viewAgendaButton').addEventListener('click', () => showToast('Agenda completa: versão demonstrativa do MVP.'));
-    document.querySelector('#resultViewAgendaButton').addEventListener('click', () => showToast('Agenda completa: versão demonstrativa do MVP.'));
-
-    document.querySelector('#logoutButton').addEventListener('click', () => {
-      showToast('Sessão encerrada na demonstração.');
-      setTimeout(() => showScreen('dashboard'), 250);
-    });
-
-    document.querySelectorAll('[data-shortcut]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const shortcut = button.dataset.shortcut;
-        if (shortcut === 'agenda') {
-          showToast('Agenda: use “Novo agendamento” para testar o fluxo central.');
-        } else {
-          showToast(`${capitalize(shortcut)}: módulo previsto no MVP.`);
-        }
-      });
-    });
-
-    document.querySelectorAll('[data-nav]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const nav = button.dataset.nav;
-        if (nav === 'dashboard') {
-          showScreen('dashboard');
-        } else if (nav === 'agenda') {
-          showScreen('dashboard');
-          document.querySelector('.appointments-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          showToast(`${capitalize(nav)}: módulo previsto no MVP.`);
-        }
-      });
-    });
-
-    serviceSelect.addEventListener('change', () => {
-      updatePriceAndDuration();
-      clearFieldError(serviceSelect, 'serviceError');
-    });
-
-    startTimeInput.addEventListener('change', () => {
-      autoFillEndTime();
-      clearFieldError(startTimeInput, 'startTimeError');
-    });
-
-    dateInput.addEventListener('change', () => clearFieldError(dateInput, 'dateError'));
-    endTimeInput.addEventListener('change', () => clearFieldError(endTimeInput, 'endTimeError'));
-    clientSelect.addEventListener('change', () => clearFieldError(clientSelect, 'clientError'));
-
-    notesInput.addEventListener('input', () => {
-      notesCounter.textContent = `${notesInput.value.length}/250`;
-    });
-
-    bookingForm.addEventListener('submit', handleBookingSubmit);
-
-    document.querySelector('#newClientButton').addEventListener('click', () => {
-      newClientName.value = '';
-      newClientPhone.value = '';
-      clientDialog.showModal();
-      setTimeout(() => newClientName.focus(), 50);
-    });
-
-    document.querySelector('#clientForm').addEventListener('submit', (event) => {
-      const submitterValue = event.submitter?.value;
-      if (submitterValue === 'cancel') return;
-
-      event.preventDefault();
-      const name = newClientName.value.trim();
-      const phone = newClientPhone.value.trim();
-
-      if (!name || !phone) {
-        showToast('Preencha nome e telefone para cadastrar a cliente.');
-        return;
-      }
-
-      const option = document.createElement('option');
-      option.value = name;
-      option.textContent = name;
-      clientSelect.appendChild(option);
-      clientSelect.value = name;
-      clientDialog.close();
-      showToast('Cliente cadastrada para esta demonstração.');
-    });
-
-    registerPaymentButton.addEventListener('click', () => {
-      if (!state.lastResult || state.lastResult.type !== 'success') return;
-      state.lastResult.appointment.paymentStatus = 'paid';
-      document.querySelector('#paymentStatusText').textContent = 'Pago';
-      renderAppointments();
-      showToast('Pagamento registrado como pago.');
-    });
-
-    backToAgendaButton.addEventListener('click', () => {
-      showScreen('dashboard');
-      setTimeout(() => document.querySelector('.appointments-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-    });
-
-    fixTimeButton.addEventListener('click', () => showScreen('form'));
-  }
-
-  function hydrateDefaults() {
-    clientSelect.value = 'Ana Souza';
-    serviceSelect.value = 'Maquiagem Social';
-    dateInput.value = '2026-10-15';
-    startTimeInput.value = '14:00';
-    endTimeInput.value = '15:00';
-    notesInput.value = 'Evento às 18h';
-    notesCounter.textContent = `${notesInput.value.length}/250`;
-    updatePriceAndDuration(false);
-  }
-
-  function showScreen(name) {
-    Object.entries(screens).forEach(([key, screen]) => {
-      const active = key === name;
-      screen.hidden = !active;
-      screen.classList.toggle('is-active', active);
-    });
-
-    state.currentScreen = name;
-    updateBottomNav(name);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    setTimeout(() => {
-      screens[name]?.querySelector('h1')?.focus?.();
-      document.querySelector('#mainContent')?.focus({ preventScroll: true });
-    }, 20);
-  }
-
-  function updateBottomNav(name) {
-    document.querySelectorAll('.bottom-nav-item').forEach((item) => {
-      item.classList.toggle('is-active', item.dataset.nav === (name === 'dashboard' ? 'dashboard' : 'agenda'));
-    });
-  }
-
-  function handleBookingSubmit(event) {
-    event.preventDefault();
-    clearAllErrors();
-
-    const selectedOption = serviceSelect.selectedOptions[0];
-    const appointment = {
-      id: Date.now(),
-      client: clientSelect.value.trim(),
-      service: serviceSelect.value.trim(),
-      date: dateInput.value,
-      startTime: startTimeInput.value,
-      endTime: endTimeInput.value,
-      price: Number(selectedOption?.dataset.price || 0),
-      notes: notesInput.value.trim(),
-      status: 'confirmed',
-      paymentStatus: 'pending',
-    };
-
-    const errors = validateAppointment(appointment);
-    if (errors.length > 0) {
-      errors.forEach(({ field, id, message }) => setFieldError(field, id, message));
-      errors[0].field.focus();
-      showToast('Revise os campos destacados antes de continuar.');
-      return;
-    }
-
-    const conflictingAppointment = findConflict(appointment);
-    if (conflictingAppointment) {
-      state.lastResult = { type: 'conflict', appointment, conflictingAppointment };
-      renderResult();
-      showScreen('result');
-      return;
-    }
-
-    state.appointments.push(appointment);
-    state.lastResult = { type: 'success', appointment };
-    renderAppointments();
-    renderResult();
-    showScreen('result');
-  }
-
-  function validateAppointment(appointment) {
-    const errors = [];
-
-    if (!appointment.client) errors.push({ field: clientSelect, id: 'clientError', message: 'Selecione uma cliente.' });
-    if (!appointment.service) errors.push({ field: serviceSelect, id: 'serviceError', message: 'Selecione um serviço.' });
-    if (!appointment.date) errors.push({ field: dateInput, id: 'dateError', message: 'Informe a data do atendimento.' });
-    if (!appointment.startTime) errors.push({ field: startTimeInput, id: 'startTimeError', message: 'Informe o horário inicial.' });
-    if (!appointment.endTime) errors.push({ field: endTimeInput, id: 'endTimeError', message: 'Informe o horário final.' });
-
-    if (appointment.startTime && appointment.endTime && appointment.endTime <= appointment.startTime) {
-      errors.push({ field: endTimeInput, id: 'endTimeError', message: 'O horário final deve ser posterior ao horário inicial.' });
-    }
-
-    return errors;
-  }
-
-  function findConflict(candidate) {
-    return state.appointments.find((appointment) => {
-      if (appointment.date !== candidate.date || appointment.status === 'cancelled') return false;
-      return candidate.startTime < appointment.endTime && candidate.endTime > appointment.startTime;
-    });
-  }
-
-  function renderResult() {
-    const result = state.lastResult;
-    if (!result) return;
-
-    const appointment = result.appointment;
-    fillSummary(appointment);
-
-    if (result.type === 'success') {
-      resultHero.classList.remove('error');
-      resultIcon.textContent = '✓';
-      resultTitle.textContent = 'Agendamento realizado';
-      resultSubtitle.textContent = 'Tudo certo. O horário foi reservado na agenda.';
-
-      resultAlert.className = 'alert-banner success';
-      resultAlertSymbol.textContent = '✓';
-      resultAlertTitle.textContent = 'Agendamento realizado com sucesso';
-      resultAlertText.textContent = 'O atendimento foi salvo e já aparece na agenda.';
-
-      appointmentStatusBadge.className = 'status-badge confirmed';
-      appointmentStatusBadge.textContent = '✓ Confirmado';
-      document.querySelector('#bookingStatusText').textContent = 'Confirmado';
-      document.querySelector('#paymentStatusText').textContent = appointment.paymentStatus === 'paid' ? 'Pago' : 'Pendente';
-
-      registerPaymentButton.classList.remove('is-hidden');
-      backToAgendaButton.classList.remove('is-hidden');
-      fixTimeButton.classList.add('is-hidden');
-      dayAgendaCard.classList.remove('is-hidden');
-    } else {
-      const conflict = result.conflictingAppointment;
-      resultHero.classList.add('error');
-      resultIcon.textContent = '!';
-      resultTitle.textContent = 'Horário indisponível';
-      resultSubtitle.textContent = 'Já existe um atendimento ativo nesse intervalo.';
-
-      resultAlert.className = 'alert-banner error';
-      resultAlertSymbol.textContent = '!';
-      resultAlertTitle.textContent = 'Não foi possível salvar o agendamento';
-      resultAlertText.textContent = `Já existe um atendimento entre ${conflict.startTime} e ${conflict.endTime}. Escolha outro horário.`;
-
-      appointmentStatusBadge.className = 'status-badge cancelled';
-      appointmentStatusBadge.textContent = '! Não salvo';
-      document.querySelector('#bookingStatusText').textContent = 'Não salvo';
-      document.querySelector('#paymentStatusText').textContent = 'Não iniciado';
-
-      registerPaymentButton.classList.add('is-hidden');
-      backToAgendaButton.classList.remove('is-hidden');
-      fixTimeButton.classList.remove('is-hidden');
-      dayAgendaCard.classList.add('is-hidden');
-    }
-  }
-
-  function fillSummary(appointment) {
-    document.querySelector('#summaryClient').textContent = appointment.client || '—';
-    document.querySelector('#summaryService').textContent = appointment.service || '—';
-    document.querySelector('#summaryDate').textContent = formatDate(appointment.date);
-    document.querySelector('#summaryTime').textContent = `${appointment.startTime} – ${appointment.endTime}`;
-    document.querySelector('#summaryPrice').textContent = formatCurrency(appointment.price);
-    document.querySelector('#summaryNotes').textContent = appointment.notes || 'Sem observações.';
-  }
-
-  function renderAppointments() {
-    renderAppointmentList(document.querySelector('#appointmentList'), todayIso(), 3);
-
-    const resultDate = state.lastResult?.appointment?.date || '2026-10-15';
-    renderAppointmentList(document.querySelector('#resultAppointmentList'), resultDate, 5);
-  }
-
-  function renderAppointmentList(container, date, limit) {
-    const items = state.appointments
-      .filter((appointment) => appointment.date === date && appointment.status !== 'cancelled')
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .slice(0, limit);
-
-    if (items.length === 0) {
-      container.innerHTML = '<p class="screen-subtitle">Nenhum atendimento para esta data.</p>';
-      return;
-    }
-
-    container.innerHTML = items.map((appointment) => {
-      const paid = appointment.paymentStatus === 'paid';
-      return `
-        <article class="appointment-item">
-          <time class="appointment-time" datetime="${appointment.date}T${appointment.startTime}">${appointment.startTime}</time>
-          <div class="appointment-main">
-            <strong>${escapeHtml(appointment.client)}</strong>
-            <span>${escapeHtml(appointment.service)}</span>
-          </div>
-          <span class="status-badge ${paid ? 'confirmed' : 'pending'}">
-            ${paid ? '✓ Confirmado' : '$ Pendente'}
-          </span>
-        </article>
-      `;
-    }).join('');
-  }
-
-  function updatePriceAndDuration(updateEndTime = true) {
-    const option = serviceSelect.selectedOptions[0];
-    const price = Number(option?.dataset.price || 0);
-    servicePrice.textContent = formatCurrency(price);
-
-    if (updateEndTime && startTimeInput.value && option?.dataset.duration) {
-      endTimeInput.value = addMinutesToTime(startTimeInput.value, Number(option.dataset.duration));
-    }
-  }
-
-  function autoFillEndTime() {
-    const option = serviceSelect.selectedOptions[0];
-    const duration = Number(option?.dataset.duration || 60);
-    if (startTimeInput.value) {
-      endTimeInput.value = addMinutesToTime(startTimeInput.value, duration);
-    }
-  }
-
-  function setFieldError(field, errorId, message) {
-    field.classList.add('field-invalid');
-    field.setAttribute('aria-invalid', 'true');
-    document.querySelector(`#${errorId}`).textContent = message;
-  }
-
-  function clearFieldError(field, errorId) {
-    field.classList.remove('field-invalid');
-    field.removeAttribute('aria-invalid');
-    document.querySelector(`#${errorId}`).textContent = '';
-  }
-
-  function clearAllErrors() {
-    [
-      [clientSelect, 'clientError'],
-      [serviceSelect, 'serviceError'],
-      [dateInput, 'dateError'],
-      [startTimeInput, 'startTimeError'],
-      [endTimeInput, 'endTimeError'],
-    ].forEach(([field, id]) => clearFieldError(field, id));
-  }
-
-  function showToast(message) {
-    toast.textContent = message;
-    toast.classList.add('is-visible');
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => toast.classList.remove('is-visible'), 2800);
-  }
-
-  function todayIso() {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  function formatDate(iso) {
-    if (!iso) return '—';
-    const [year, month, day] = iso.split('-');
-    return `${day}/${month}/${year}`;
-  }
-
-  function formatCurrency(value) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
-  }
-
-  function addMinutesToTime(time, minutes) {
-    const [hours, mins] = time.split(':').map(Number);
-    const total = hours * 60 + mins + minutes;
-    const newHours = Math.floor((total % (24 * 60)) / 60);
-    const newMinutes = total % 60;
-    return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
-  }
-
-  function capitalize(value) {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-})();
+import{formatCurrency,formatDate,hasConflict,validateAppointment,calculateEndTime,monthKey,sanitizePlainText}from"./app-core.js";
+const STORAGE_KEY="beleza-em-dia-v2-state",SETTINGS_KEY="beleza-em-dia-v2-accessibility";
+const today=new Date(),isoToday=today.toISOString().slice(0,10),currentMonth=isoToday.slice(0,7);
+const seedState={clients:[{id:1,name:"Ana Souza",phone:"(81) 99999-0001",email:"ana@example.com"},{id:2,name:"Mariana Costa",phone:"(81) 99999-0002",email:"mariana@example.com"},{id:3,name:"Carla Lima",phone:"(81) 99999-0003",email:""}],services:[{id:1,name:"Maquiagem Social",price:120,duration:60,active:true},{id:2,name:"Maquiagem para Evento",price:150,duration:75,active:true},{id:3,name:"Maquiagem Noiva",price:280,duration:120,active:true}],appointments:[{id:1,clientId:2,serviceId:1,date:isoToday,start:"09:00",end:"10:00",price:120,notes:"",status:"confirmed",paymentStatus:"paid",paymentDate:isoToday},{id:2,clientId:3,serviceId:2,date:isoToday,start:"14:30",end:"15:45",price:150,notes:"",status:"confirmed",paymentStatus:"pending",paymentDate:null}],lastCreatedAppointmentId:null};
+const clone=obj=>JSON.parse(JSON.stringify(obj));let state=loadState();
+function loadState(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY));return s&&s.clients&&s.services&&s.appointments?s:clone(seedState)}catch{return clone(seedState)}}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+const $=(s,scope=document)=>scope.querySelector(s),$$=(s,scope=document)=>[...scope.querySelectorAll(s)];
+const nextId=c=>c.reduce((m,i)=>Math.max(m,i.id),0)+1,getClient=id=>state.clients.find(i=>i.id===Number(id)),getService=id=>state.services.find(i=>i.id===Number(id)),getAppointment=id=>state.appointments.find(i=>i.id===Number(id));
+function esc(v=""){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function empty(msg){return`<div class="empty-state">${esc(msg)}</div>`}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove("show"),2400)}
+function routeTo(route){$$(".view").forEach(v=>v.classList.toggle("active",v.dataset.view===route));$$(".nav-item[data-route]").forEach(i=>i.classList.toggle("active",i.dataset.route===route));$$(".mobile-nav button").forEach(i=>i.classList.toggle("active",i.dataset.routeJump===route));if(route==="dashboard")renderDashboard();if(route==="agenda")renderAgenda();if(route==="clients")renderClients();if(route==="services")renderServices();if(route==="payments")renderPayments();if(route==="appointment-form")prepareAppointmentForm();if(route==="result")renderResult();$("#main-content").focus({preventScroll:true});window.scrollTo({top:0,behavior:"smooth"});closeMobileMenu()}
+function itemHtml(a){const c=getClient(a.clientId),s=getService(a.serviceId),cls=a.paymentStatus==="paid"?"paid":"pending",txt=a.paymentStatus==="paid"?"✓ Pago":"◷ Pendente";return`<article class="list-item"><div class="time">${a.start}</div><div><h3>${esc(c?.name??"Cliente")}</h3><p>${esc(s?.name??"Serviço")} • ${formatCurrency(a.price)}</p></div><span class="status-chip ${cls}">${txt}</span></article>`}
+function renderDashboard(){const list=state.appointments.filter(a=>a.date===isoToday&&a.status!=="cancelled").sort((a,b)=>a.start.localeCompare(b.start));const received=state.appointments.filter(a=>monthKey(a.paymentDate)===currentMonth&&a.paymentStatus==="paid").reduce((s,a)=>s+Number(a.price),0),pending=state.appointments.filter(a=>a.paymentStatus==="pending"&&a.status!=="cancelled").length;$("#stat-today").textContent=list.length;$("#stat-revenue").textContent=formatCurrency(received);$("#stat-pending").textContent=pending;$("#dashboard-appointments").innerHTML=list.length?list.slice(0,5).map(itemHtml).join(""):empty("Nenhum atendimento para hoje.")}
+function renderAgenda(){const d=$("#agenda-date");if(!d.value)d.value=isoToday;const date=d.value,status=$("#agenda-status").value,filtered=state.appointments.filter(a=>(!date||a.date===date)&&(status==="all"||a.status===status)).sort((a,b)=>`${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));$("#agenda-list").innerHTML=filtered.length?filtered.map(a=>{const c=getClient(a.clientId),s=getService(a.serviceId),map={confirmed:["confirmed","✓ Confirmado"],cancelled:["cancelled","× Cancelado"]},[cls,txt]=map[a.status]??map.confirmed;return`<article class="list-item"><div class="time">${a.start}</div><div><h3>${esc(c?.name??"Cliente")}</h3><p>${esc(s?.name??"Serviço")} • ${formatDate(a.date)} • ${a.start}–${a.end}</p></div><span class="status-chip ${cls}">${txt}</span></article>`}).join(""):empty("Nenhum agendamento encontrado para os filtros escolhidos.")}
+function renderClients(){const q=($("#client-search").value||"").toLowerCase().trim(),filtered=state.clients.filter(c=>[c.name,c.phone,c.email].some(v=>String(v||"").toLowerCase().includes(q)));$("#clients-list").innerHTML=filtered.length?filtered.map(c=>{const count=state.appointments.filter(a=>a.clientId===c.id).length;return`<div class="table-row"><strong>${esc(c.name)}</strong><span>${esc(c.phone)}</span><span>${esc(c.email||"E-mail não informado")}</span><span>${count} atendimento(s)</span></div>`}).join(""):empty("Nenhuma cliente encontrada.")}
+function renderServices(){$("#services-grid").innerHTML=state.services.length?state.services.map(s=>`<article class="service-card"><div class="service-icon" aria-hidden="true">✦</div><h3>${esc(s.name)}</h3><p>Serviço disponível para novos agendamentos.</p><div class="service-meta"><span>${formatCurrency(s.price)}</span><span>${s.duration} min</span></div></article>`).join(""):empty("Nenhum serviço cadastrado.")}
+function renderPayments(){const active=state.appointments.filter(a=>a.status!=="cancelled"),received=active.filter(a=>a.paymentStatus==="paid"&&monthKey(a.paymentDate)===currentMonth).reduce((s,a)=>s+Number(a.price),0),toReceive=active.filter(a=>a.paymentStatus==="pending").reduce((s,a)=>s+Number(a.price),0);$("#payment-received").textContent=formatCurrency(received);$("#payment-to-receive").textContent=formatCurrency(toReceive);$("#payments-list").innerHTML=active.length?active.slice().sort((a,b)=>`${b.date}${b.start}`.localeCompare(`${a.date}${a.start}`)).map(a=>{const c=getClient(a.clientId),cls=a.paymentStatus==="paid"?"paid":"pending",label=a.paymentStatus==="paid"?"✓ Pago":"◷ Pendente";return`<article class="list-item"><div class="time">${formatDate(a.date)}</div><div><h3>${esc(c?.name??"Cliente")}</h3><p>${formatCurrency(a.price)} • ${a.start}</p></div><button class="status-chip ${cls} payment-toggle" data-payment-id="${a.id}">${label}</button></article>`}).join(""):empty("Nenhum pagamento registrado.")}
+function populateSelects(){$("#appointment-client").innerHTML=`<option value="">Selecione uma cliente</option>`+state.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");$("#appointment-service").innerHTML=`<option value="">Selecione um serviço</option>`+state.services.filter(s=>s.active).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+function prepareAppointmentForm(){populateSelects();$("#appointment-form").reset();$("#appointment-date").value=isoToday;$("#appointment-price").value="";$("#notes-count").textContent="0";clearErrors();setAvailability("","Disponibilidade","Escolha data e horário para verificar conflitos.");updateSummary()}
+function candidate(){const s=getService($("#appointment-service").value);return{clientId:Number($("#appointment-client").value)||null,serviceId:Number($("#appointment-service").value)||null,date:$("#appointment-date").value,start:$("#appointment-start").value,end:$("#appointment-end").value,price:s?.price??0,notes:sanitizePlainText($("#appointment-notes").value),status:"confirmed",paymentStatus:"pending",paymentDate:null}}
+function clearErrors(){$$("[data-error-for]").forEach(e=>e.textContent="");$$("#appointment-form .invalid").forEach(e=>e.classList.remove("invalid"))}
+function showErrors(errors){clearErrors();const map={clientId:"appointment-client",serviceId:"appointment-service",date:"appointment-date",start:"appointment-start",end:"appointment-end"};Object.entries(errors).forEach(([k,m])=>{if(k==="conflict")return;const id=map[k],f=$(`#${id}`),e=$(`[data-error-for="${id}"]`);if(f)f.classList.add("invalid");if(e)e.textContent=m});if(errors.conflict)setAvailability("conflict","Horário indisponível",errors.conflict)}
+function setAvailability(type,title,msg){const b=$("#availability-box");b.classList.remove("available","conflict");if(type)b.classList.add(type);b.querySelector("strong").textContent=title;b.querySelector("p").textContent=msg}
+function checkAvailability(){const c=candidate();if(!c.date||!c.start||!c.end)return setAvailability("","Disponibilidade","Escolha data e horário para verificar conflitos.");hasConflict(state.appointments,c)?setAvailability("conflict","Horário indisponível","Já existe um atendimento ativo nesse intervalo."):setAvailability("available","Horário disponível","Nenhum conflito encontrado para o período selecionado.")}
+function updateSummary(){const c=getClient($("#appointment-client").value),s=getService($("#appointment-service").value),d=$("#appointment-date").value,start=$("#appointment-start").value,end=$("#appointment-end").value;$("#summary-client").textContent=c?.name??"—";$("#summary-service").textContent=s?.name??"—";$("#summary-date").textContent=d?formatDate(d):"—";$("#summary-time").textContent=start&&end?`${start}–${end}`:"—";$("#summary-price").textContent=s?formatCurrency(s.price):"—";$("#appointment-price").value=s?formatCurrency(s.price):""}
+function renderResult(){const a=getAppointment(state.lastCreatedAppointmentId);if(!a)return routeTo("dashboard");const c=getClient(a.clientId),s=getService(a.serviceId);$("#result-details").innerHTML=[["Cliente",c?.name??"—"],["Serviço",s?.name??"—"],["Data",formatDate(a.date)],["Horário",`${a.start}–${a.end}`],["Valor",formatCurrency(a.price)],["Observações",a.notes||"Sem observações"]].map(([l,v])=>`<div class="result-detail"><span>${esc(l)}</span><strong>${esc(String(v))}</strong></div>`).join("");updateResultPayment(a)}
+function updateResultPayment(a){const chip=$("#result-payment-status"),btn=$("#result-pay-button");if(a.paymentStatus==="paid"){chip.className="status-chip paid";chip.textContent="✓ Pagamento registrado";btn.textContent="Pagamento registrado";btn.disabled=true}else{chip.className="status-chip pending";chip.textContent="◷ Pagamento pendente";btn.textContent="Registrar pagamento";btn.disabled=false}}
+function pay(id){const a=getAppointment(id);if(!a)return;a.paymentStatus="paid";a.paymentDate=isoToday;saveState();toast("Pagamento registrado com sucesso.");if($('[data-view="result"]').classList.contains("active"))updateResultPayment(a);renderPayments();renderDashboard()}
+function saveClient(){const name=sanitizePlainText($("#client-name").value),phone=sanitizePlainText($("#client-phone").value),email=sanitizePlainText($("#client-email").value);if(!name||!phone){toast("Informe nome e telefone da cliente.");return false}state.clients.push({id:nextId(state.clients),name,phone,email});saveState();renderClients();toast("Cliente cadastrada com sucesso.");return true}
+function saveService(){const name=sanitizePlainText($("#service-name").value),price=Number($("#service-price").value),duration=Number($("#service-duration").value);if(!name||Number.isNaN(price)||price<0||!duration||duration<=0){toast("Revise os dados do serviço.");return false}state.services.push({id:nextId(state.services),name,price,duration,active:true});saveState();renderServices();toast("Serviço cadastrado com sucesso.");return true}
+function openAccessibility(){const d=$("#accessibility-drawer");d.classList.add("open");d.setAttribute("aria-hidden","false");$("#backdrop").hidden=false;$("#close-accessibility").focus()}
+function closeAccessibility(){const d=$("#accessibility-drawer");d.classList.remove("open");d.setAttribute("aria-hidden","true");$("#backdrop").hidden=true}
+function applySettings(){const s={fontSize:$("#font-size-setting").value,contrast:$("#contrast-setting").checked,focus:$("#focus-setting").checked,motion:$("#motion-setting").checked};localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));applyAccessibility(s);closeAccessibility();toast("Preferências de acessibilidade aplicadas.")}
+function loadSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY))||{fontSize:"normal",contrast:false,focus:true,motion:false};$("#font-size-setting").value=s.fontSize;$("#contrast-setting").checked=s.contrast;$("#focus-setting").checked=s.focus;$("#motion-setting").checked=s.motion;applyAccessibility(s)}catch{}}
+function applyAccessibility(s){document.documentElement.dataset.fontSize=s.fontSize;document.documentElement.classList.toggle("high-contrast",!!s.contrast);document.documentElement.classList.toggle("no-focus-outline",s.focus===false);document.documentElement.classList.toggle("reduce-motion",!!s.motion)}
+function openMobileMenu(){$(".sidebar").classList.add("mobile-open");$("#backdrop").hidden=false;$("#mobile-menu").setAttribute("aria-expanded","true")}
+function closeMobileMenu(){$(".sidebar").classList.remove("mobile-open");$("#mobile-menu").setAttribute("aria-expanded","false");if(!$("#accessibility-drawer").classList.contains("open"))$("#backdrop").hidden=true}
+
+document.addEventListener("click",e=>{const route=e.target.closest("[data-route]")?.dataset.route||e.target.closest("[data-route-jump]")?.dataset.routeJump;if(route)routeTo(route);if(e.target.closest('[data-action="new-appointment"]'))routeTo("appointment-form");const payBtn=e.target.closest(".payment-toggle");if(payBtn)pay(Number(payBtn.dataset.paymentId))});
+$("#agenda-date").addEventListener("change",renderAgenda);$("#agenda-status").addEventListener("change",renderAgenda);$("#client-search").addEventListener("input",renderClients);
+$("#open-client-form").addEventListener("click",()=>{$("#client-form").reset();$("#client-dialog").showModal()});$("#save-client").addEventListener("click",e=>{e.preventDefault();if(saveClient())$("#client-dialog").close()});
+$("#open-service-form").addEventListener("click",()=>{$("#service-form").reset();$("#service-duration").value=60;$("#service-dialog").showModal()});$("#save-service").addEventListener("click",e=>{e.preventDefault();if(saveService())$("#service-dialog").close()});
+$("#appointment-service").addEventListener("change",()=>{const s=getService($("#appointment-service").value);if(s&&$("#appointment-start").value)$("#appointment-end").value=calculateEndTime($("#appointment-start").value,s.duration);updateSummary();checkAvailability()});
+$("#appointment-start").addEventListener("change",()=>{const s=getService($("#appointment-service").value);if(s)$("#appointment-end").value=calculateEndTime($("#appointment-start").value,s.duration);updateSummary();checkAvailability()});
+["appointment-client","appointment-date","appointment-end"].forEach(id=>$(`#${id}`).addEventListener("change",()=>{updateSummary();checkAvailability()}));
+$("#appointment-notes").addEventListener("input",e=>$("#notes-count").textContent=e.target.value.length);
+$("#appointment-form").addEventListener("submit",e=>{e.preventDefault();const c=candidate(),r=validateAppointment(c,state.appointments);if(!r.valid){showErrors(r.errors);toast("Revise os dados do agendamento.");return}c.id=nextId(state.appointments);state.appointments.push(c);state.lastCreatedAppointmentId=c.id;saveState();routeTo("result")});
+$("#result-pay-button").addEventListener("click",()=>pay(state.lastCreatedAppointmentId));
+$("#open-accessibility").addEventListener("click",openAccessibility);$("#mobile-accessibility").addEventListener("click",openAccessibility);$("#close-accessibility").addEventListener("click",closeAccessibility);$("#apply-accessibility").addEventListener("click",applySettings);$("#mobile-menu").addEventListener("click",openMobileMenu);$("#backdrop").addEventListener("click",()=>{closeAccessibility();closeMobileMenu()});
+loadSettings();renderDashboard();renderAgenda();renderClients();renderServices();renderPayments();
